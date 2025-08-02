@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="/css/style.css">
     <link rel="icon" href="/assets/logo.png" type="image/x-icon">
     <style>
+        /* Loading spinner for auth states */
         .auth-loading {
             display: none;
             width: 20px;
@@ -17,53 +18,39 @@
             animation: spin 1s ease-in-out infinite;
             margin-right: 10px;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
-        .popup-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
-        .popup-content {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 10px;
-            max-width: 400px;
-            width: 90%;
-            text-align: center;
-        }
-        .auth-status {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-            text-align: center;
-            display: none;
-        }
-        .auth-status.error { background-color: #ffebee; color: #c62828; }
-        .auth-status.success { background-color: #e8f5e9; color: #2e7d32; }
     </style>
 </head>
 <body>
-    <!-- Your existing HTML structure -->
     <div class="top-section">
-        <!-- ... -->
+        <div class="theme-controls">
+            <button id="lightThemeBtn" class="theme-btn active">☀️ Light</button>
+            <button id="darkThemeBtn" class="theme-btn">🌙 Dark</button>
+        </div>
+        <div class="hero rounded-box">
+            <h1>Your Sky Blue Anime Paradise</h1>
+            <p class="hero-subtitle">Stream the latest anime with crystal clear quality</p>
+        </div>
     </div>
 
     <nav class="navbar">
-        <!-- ... -->
+        <div class="logo-container">
+            <a href="/">
+                <img src="/assets/logo2.png" alt="AniMotion Logo" class="logo">
+            </a>
+        </div>
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Search anime...">
+        </div>
         <div class="auth-section">
-            <button id="loginBtn" class="discord-btn">
+            <button id="loginBtn" class="discord-btn" onclick="handleDiscordLogin()">
                 <span id="authSpinner" class="auth-loading"></span>
                 <img src="/assets/discord-logo.png" alt="Discord Logo" class="discord-icon">
                 <span id="loginText">Login with Discord</span>
             </button>
+            
             <div id="userProfile" class="user-profile hidden">
                 <img id="userAvatar" class="user-avatar" src="" alt="User Avatar">
                 <span id="username"></span>
@@ -73,151 +60,67 @@
     </nav>
 
     <div class="main-content">
-        <div id="authStatusMessage" class="auth-status hidden"></div>
-        <!-- ... -->
-    </div>
-
-    <div id="popupOverlay" class="popup-overlay">
-        <div class="popup-content">
-            <h3>Connecting to Discord</h3>
-            <p>Please complete the authentication in the popup window.</p>
-            <p>If the window didn't open, <a href="#" id="openPopupAgain">click here</a> to try again.</p>
-            <button id="cancelAuth" class="logout-btn">Cancel</button>
+        <div id="authStatusMessage" class="hidden" style="
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: center;
+        "></div>
+        
+        <div class="section">
+            <h2>Recently Added</h2>
+            <div class="anime-grid" id="recentAnime">
+            </div>
         </div>
     </div>
 
     <footer class="footer">
-        <!-- ... -->
+        <div class="social-links">
+            <a href="https://youtube.com" target="_blank" class="social-link">
+                <img src="/assets/youtube-icon.png" alt="YouTube">
+            </a>
+            <a href="https://tiktok.com" target="_blank" class="social-link">
+                <img src="/assets/tiktok-icon.png" alt="TikTok">
+            </a>
+            <a href="https://discord.com" target="_blank" class="social-link">
+                <img src="/assets/discord-icon.png" alt="Discord">
+            </a>
+        </div>
+        <p class="copyright">© 2025 AniMotion. All rights reserved.</p>
     </footer>
 
     <script>
-        // DOM elements
-        const popupOverlay = document.getElementById('popupOverlay');
-        const loginBtn = document.getElementById('loginBtn');
-        const authSpinner = document.getElementById('authSpinner');
-        const loginText = document.getElementById('loginText');
-        const userProfile = document.getElementById('userProfile');
-        const userAvatar = document.getElementById('userAvatar');
-        const username = document.getElementById('username');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const authStatusMessage = document.getElementById('authStatusMessage');
-        const openPopupAgain = document.getElementById('openPopupAgain');
-        const cancelAuth = document.getElementById('cancelAuth');
+        function handleDiscordLogin() {
+            const spinner = document.getElementById('authSpinner');
+            const loginText = document.getElementById('loginText');
 
-        // Auth flow
-        function openDiscordAuth() {
-            authSpinner.style.display = 'inline-block';
-            loginText.textContent = 'Preparing...';
-            popupOverlay.style.display = 'flex';
+            spinner.style.display = 'inline-block';
+            loginText.textContent = 'Redirecting...';
             
-            const width = 500;
-            const height = 700;
-            const left = (screen.width - width) / 2;
-            const top = (screen.height - height) / 2;
-            
-            const authWindow = window.open(
-                '/auth/discord',
-                'DiscordAuth',
-                `width=${width},height=${height},top=${top},left=${left}`
-            );
-            
-            if (!authWindow) {
-                showAuthError('Popup was blocked. Please allow popups for this site.');
-                popupOverlay.style.display = 'none';
-                resetLoginButton();
-                return;
-            }
-
-            const checkAuth = setInterval(() => {
-                fetch('/api/user')
-                    .then(res => res.json())
-                    .then(user => {
-                        if (user && user.id) {
-                            clearInterval(checkAuth);
-                            authWindow.close();
-                            handleAuthSuccess(user);
-                        }
-                    })
-                    .catch(() => {
-                        if (authWindow.closed) {
-                            clearInterval(checkAuth);
-                            popupOverlay.style.display = 'none';
-                            resetLoginButton();
-                        }
-                    });
-            }, 1000);
+            window.location.href = '/auth/discord';
         }
 
-        function handleAuthSuccess(user) {
-            popupOverlay.style.display = 'none';
-            userAvatar.src = user.avatar 
-                ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
-                : 'https://cdn.discordapp.com/embed/avatars/0.png';
-            username.textContent = user.username;
-            userProfile.classList.remove('hidden');
-            loginBtn.classList.add('hidden');
-            showAuthSuccess('Successfully logged in!');
-            resetLoginButton();
-        }
-
-        // Helper functions
-        function showAuthError(message) {
-            authStatusMessage.textContent = message;
-            authStatusMessage.className = 'auth-status error';
-            authStatusMessage.style.display = 'block';
-        }
-
-        function showAuthSuccess(message) {
-            authStatusMessage.textContent = message;
-            authStatusMessage.className = 'auth-status success';
-            authStatusMessage.style.display = 'block';
-            setTimeout(() => authStatusMessage.style.display = 'none', 5000);
-        }
-
-        function resetLoginButton() {
-            authSpinner.style.display = 'none';
-            loginText.textContent = 'Login with Discord';
-        }
-
-        // Event listeners
-        loginBtn.addEventListener('click', openDiscordAuth);
-        openPopupAgain.addEventListener('click', (e) => {
-            e.preventDefault();
-            openDiscordAuth();
-        });
-        cancelAuth.addEventListener('click', () => {
-            popupOverlay.style.display = 'none';
-            resetLoginButton();
-        });
-        logoutBtn.addEventListener('click', () => {
-            fetch('/logout').then(() => {
-                userProfile.classList.add('hidden');
-                loginBtn.classList.remove('hidden');
-                showAuthSuccess('Successfully logged out.');
-            });
-        });
-
-        // Check auth status on load
         document.addEventListener('DOMContentLoaded', () => {
-            fetch('/api/user')
-                .then(res => res.json())
-                .then(user => {
-                    if (user && user.id) {
-                        userAvatar.src = user.avatar 
-                            ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
-                            : 'https://cdn.discordapp.com/embed/avatars/0.png';
-                        username.textContent = user.username;
-                        userProfile.classList.remove('hidden');
-                        loginBtn.classList.add('hidden');
-                    }
-                });
-
             const urlParams = new URLSearchParams(window.location.search);
+            const statusMessage = document.getElementById('authStatusMessage');
+            
             if (urlParams.has('login_failed')) {
-                showAuthError('Login failed. Please try again.');
-                window.history.replaceState({}, document.title, window.location.pathname);
+                statusMessage.textContent = 'Login failed. Please try again.';
+                statusMessage.style.backgroundColor = '#ffebee';
+                statusMessage.style.color = '#c62828';
+                statusMessage.classList.remove('hidden');
+            }
+            
+            // Remove params from URL without reload
+            if (window.history.replaceState) {
+                const cleanURL = window.location.pathname;
+                window.history.replaceState({}, document.title, cleanURL);
             }
         });
     </script>
+    
+    <script src="/js/theme.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/main.js"></script>
 </body>
 </html>
