@@ -1,22 +1,31 @@
-const mockUser = {
-    id: '12345',
-    username: 'AnimeFan123',
-    avatar: 'https://cdn.discordapp.com/embed/avatars/0.png'
-};
+async function checkAuth() {
+    const response = await fetch('/api/user');
+    const user = await response.json();
 
-document.getElementById('loginBtn').addEventListener('click', () => {
-    console.log('Redirecting to Discord OAuth...');
-    
-    document.getElementById('loginBtn').classList.add('hidden');
-    
+    if (user.id) {
+        showUserProfile(user);
+    } else {
+        document.getElementById('loginBtn').classList.remove('hidden');
+    }
+}
+
+function showUserProfile(user) {
     const userProfile = document.getElementById('userProfile');
-    userProfile.classList.remove('hidden');
+    const userAvatar = document.getElementById('userAvatar');
+    const username = document.getElementById('username');
+
+    userAvatar.src = user.avatar 
+        ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
+        : 'https://cdn.discordapp.com/embed/avatars/0.png';
     
-    document.getElementById('userAvatar').src = mockUser.avatar;
-    document.getElementById('username').textContent = mockUser.username;
+    username.textContent = user.username;
+    userProfile.classList.remove('hidden');
+    document.getElementById('loginBtn').classList.add('hidden');
+}
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await fetch('/logout', { method: 'GET' });
+    window.location.reload();
 });
 
-document.getElementById('logoutBtn').addEventListener('click', () => {
-    document.getElementById('userProfile').classList.add('hidden');
-    document.getElementById('loginBtn').classList.remove('hidden');
-});
+checkAuth();
