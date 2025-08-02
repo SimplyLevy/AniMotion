@@ -4,11 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AniMotion - Sky Blue Anime Paradise</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="icon" href="assets/logo.png" type="image/x-icon">
-    <link rel="shortcut icon" href="assets/logo.png" type="image/x-icon">
-    <link rel="apple-touch-icon" href="assets/logo.png">
-</head>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" href="/assets/logo.png" type="image/x-icon">
+    <style>
+        /* Loading spinner for auth states */
+        .auth-loading {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
     <div class="top-section">
@@ -16,63 +29,98 @@
             <button id="lightThemeBtn" class="theme-btn active">☀️ Light</button>
             <button id="darkThemeBtn" class="theme-btn">🌙 Dark</button>
         </div>
-        
         <div class="hero rounded-box">
             <h1>Your Sky Blue Anime Paradise</h1>
-            <p class="hero-subtitle">Show the latest anime with crystal clear quality</p>
+            <p class="hero-subtitle">Stream the latest anime with crystal clear quality</p>
         </div>
     </div>
 
-<nav class="navbar">
-    <div class="logo-container">
-        <a href="index.html">
-            <img src="assets/logo2.png" alt="AniMotion Logo" class="logo">
-        </a>
-    </div>
-        
+    <nav class="navbar">
+        <div class="logo-container">
+            <a href="/">
+                <img src="/assets/logo2.png" alt="AniMotion Logo" class="logo">
+            </a>
+        </div>
         <div class="search-bar">
             <input type="text" id="searchInput" placeholder="Search anime...">
         </div>
-        
-<div class="auth-section">
-    <button id="loginBtn" class="discord-btn">
-        <img src="assets/discord-logo.png" alt="Discord Logo" class="discord-icon">
-        <span>Login with Discord</span>
-    </button>
-</div>
-    <div id="userProfile" class="user-profile hidden">
-        <img id="userAvatar" class="user-avatar" src="" alt="User Avatar">
-        <span id="username"></span>
-        <button id="logoutBtn" class="logout-btn">Logout</button>
-    </div>
-</div>
+        <div class="auth-section">
+            <button id="loginBtn" class="discord-btn" onclick="handleDiscordLogin()">
+                <span id="authSpinner" class="auth-loading"></span>
+                <img src="/assets/discord-logo.png" alt="Discord Logo" class="discord-icon">
+                <span id="loginText">Login with Discord</span>
+            </button>
+            
+            <div id="userProfile" class="user-profile hidden">
+                <img id="userAvatar" class="user-avatar" src="" alt="User Avatar">
+                <span id="username"></span>
+                <button id="logoutBtn" class="logout-btn">Logout</button>
+            </div>
         </div>
     </nav>
 
     <div class="main-content">
+        <div id="authStatusMessage" class="hidden" style="
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: center;
+        "></div>
+        
         <div class="section">
             <h2>Recently Added</h2>
             <div class="anime-grid" id="recentAnime">
-                <p class="error-text">Failed to load anime. Try refreshing.</p>
             </div>
         </div>
     </div>
 
-<footer class="footer">
-    <div class="social-links">
-        <a href="https://www.youtube.com/@AnimotionAnime" target="_blank" class="social-link">
-            <img src="assets/youtube-icon.png" alt="YouTube">
-        </a>
-        <a href="https://www.tiktok.com/@animotionanime" target="_blank" class="social-link">
-            <img src="assets/tiktok-icon.png" alt="TikTok">
-        </a>
-        <a href="https://discord.gg/CyMS2u2rfs"target="_blank" class="social-link">
-            <img src="assets/discord-icon.png" alt="Discord">
-        </a>
-    </div>
-    <p class="copyright">© All Rights Reserved AniMotion 2025</p>
-    <script src="js/theme.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/main.js"></script>
+    <footer class="footer">
+        <div class="social-links">
+            <a href="https://youtube.com" target="_blank" class="social-link">
+                <img src="/assets/youtube-icon.png" alt="YouTube">
+            </a>
+            <a href="https://tiktok.com" target="_blank" class="social-link">
+                <img src="/assets/tiktok-icon.png" alt="TikTok">
+            </a>
+            <a href="https://discord.com" target="_blank" class="social-link">
+                <img src="/assets/discord-icon.png" alt="Discord">
+            </a>
+        </div>
+        <p class="copyright">© 2025 AniMotion. All rights reserved.</p>
+    </footer>
+
+    <script>
+        function handleDiscordLogin() {
+            const spinner = document.getElementById('authSpinner');
+            const loginText = document.getElementById('loginText');
+
+            spinner.style.display = 'inline-block';
+            loginText.textContent = 'Redirecting...';
+            
+            window.location.href = '/auth/discord';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const statusMessage = document.getElementById('authStatusMessage');
+            
+            if (urlParams.has('login_failed')) {
+                statusMessage.textContent = 'Login failed. Please try again.';
+                statusMessage.style.backgroundColor = '#ffebee';
+                statusMessage.style.color = '#c62828';
+                statusMessage.classList.remove('hidden');
+            }
+            
+            // Remove params from URL without reload
+            if (window.history.replaceState) {
+                const cleanURL = window.location.pathname;
+                window.history.replaceState({}, document.title, cleanURL);
+            }
+        });
+    </script>
+    
+    <script src="/js/theme.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/main.js"></script>
 </body>
 </html>

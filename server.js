@@ -1,109 +1,97 @@
-require('dotenv').config();
+require('dotenv').config(); // Load environment variables
 const express = require('express');
-const axios = require('axios');
 const session = require('express-session');
+const passport = require('passport');
+const DiscordStrategy = require('passport-discord').Strategy;
 const path = require('path');
-const fs = require('fs');
 const crypto = require('crypto');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-if (!process.env.SESSION_SECRET) {
-    process.env.SESSION_SECRET = crypto.randomBytes(32).toString('hex');
+// Validate environment variables
+if (!process.env.DISCORD_CLIENT_ID || !process.env.DISCORD_CLIENT_SECRET || !process.env.SESSION_SECRET) {
+  console.error('Missing required environment variables!');
+  process.exit(1);
 }
 
-app.use(express.json());
-app.use(express.static('public'));
+// Session configuration
 app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false }
+  secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
 }));
 
-app.get('/auth/discord', (req, res) => {
-    const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${process.env.DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.DISCORD_REDIRECT_URI)}&response_type=code&scope=identify`;
-    res.redirect(authUrl);
-});
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
 
-app.get('/auth/discord/callback', async (req, res) => {
-    try {
-        const { code } = req.query;
-        const tokenResponse = await axios.post('https://discord.com/api/oauth2/token', 
-            new URLSearchParams({
-                client_id: process.env.DISCORD_CLIENT_ID,
-                client_secret: process.env.DISCORD_CLIENT_SECRET,
-                grant_type: 'authorization_code',
-                code,
-                redirect_uri: process.env.DISCORD_REDIRECT_URI,
-                scope: 'identify'
-            }), {
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                }
-            });
+// Discord OAuth Strategy
+passport.use(new DiscordStrategy({
+  clientID: process.env.DISCORD_CLIENT_ID,
+  clientSecret: process.env.DISCORD_CLIENT_SECRET,
+  callbackURL: process.env.DISCORD_CALLBACK_URL || 'http://simplylevy.github.io/AniMotion/auth/discord/callback',
+  scope: ['identify', 'email']
+}, (accessToken, refreshToken, profile, done) => {
+  return done(null, profile);
+}));
 
-        const userResponse = await axios.get('https://discord.com/api/users/@me', {
-            headers: {
-                Authorization: `Bearer ${tokenResponse.data.access_token}`
-            }
-        });
+// Serialization
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((obj, done) => done(null, obj));
 
-        req.session.user = {
-            id: userResponse.data.id,
-            username: userResponse.data.username,
-            avatar: userResponse.data.avatar 
-                ? `https://cdn.discordapp.com/avatars/${userResponse.data.id}/${userResponse.data.avatar}.png`
-                : `https://cdn.discordapp.com/embed/avatars/${userResponse.data.discriminator % 5}.png`,
-            isAdmin: process.env.ADMIN_IDS.split(',').includes(userResponse.data.id)
-        };
-
-        res.redirect('/');
-    } catch (error) {
-        console.error('Discord OAuth error:', error);
-        res.redirect('/?error=auth_failed');
-    }
-});
-
-// API Routes
-app.get('/api/user', (req, res) => {
-    res.json(req.session.user || null);
-});
-
-app.get('/api/anime', (req, res) => {
-    try {
-        const animeList = JSON.parse(fs.readFileSync('anime.json', 'utf8') || []);
-        res.json(animeList);
-    } catch {
-        res.json([]);
-    }
-});
-
-app.post('/api/anime', (req, res) => {
-    if (!req.session.user?.isAdmin) {
-        return res.status(403).json({ error: 'Unauthorized' });
-    }
-    
-    const animeData = req.body;
-    animeData.id = Date.now();
-    animeData.timestamp = new Date().toISOString();
-    
-    const animeList = JSON.parse(fs.readFileSync('anime.json', 'utf8') || []);
-    animeList.unshift(animeData);
-    fs.writeFileSync('anime.json', JSON.stringify(animeList));
-    
-    res.json(animeData);
-});
+// Routes
+app.get('/auth/discord', passport.authenticate('discord'));
+app.get('/auth/discord/callback', 
+  passport.authenticate('discord', {
+    failureRedirect: '/?login_failed=true',
+    successRedirect: '/'
+  })
+);
 
 app.get('/logout', (req, res) => {
-    req.session.destroy();
+  req.logout((err) => {
+    if (err) {
+      console.error('Logout error:', err);
+      return res.status(500).send('Logout failed');
+    }
     res.redirect('/');
+  });
+});
+
+app.get('/api/user', (req, res) => {
+  if (req.user) {
+    res.json({
+      id: req.user.id,
+      username: req.user.username,
+      avatar: req.user.avatar,
+      discriminator: req.user.discriminator
+    });
+  } else {
+    res.json(null);
+  }
+});
+
+// Static files
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Fallback route
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Error handling
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
 });
 
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    if (!fs.existsSync('anime.json')) {
-        fs.writeFileSync('anime.json', '[]');
-    }
+  console.log(`Server running on https://simplylevy.github.io/AniMotion/`);
+  console.log(`Discord OAuth configured for client: ${process.env.DISCORD_CLIENT_ID}`);
 });
