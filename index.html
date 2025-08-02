@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AniMotion - Sky Blue Anime Paradise</title>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="icon" href="assets/logo.png" type="image/x-icon">
+    <link rel="icon" href="/assets/logo.png" type="image/x-icon">
     <style>
-        /* Loading spinner for auth states */
         .auth-loading {
             display: none;
             width: 20px;
@@ -18,11 +17,8 @@
             animation: spin 1s ease-in-out infinite;
             margin-right: 10px;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
         
-        /* Popup overlay styling */
         .popup-overlay {
             display: none;
             position: fixed;
@@ -35,7 +31,6 @@
             justify-content: center;
             align-items: center;
         }
-        
         .popup-content {
             background: var(--card-bg);
             padding: 20px;
@@ -44,8 +39,6 @@
             width: 90%;
             text-align: center;
         }
-        
-        /* Status message styling */
         .auth-status {
             padding: 10px;
             margin: 10px 0;
@@ -53,46 +46,24 @@
             text-align: center;
             display: none;
         }
-        
-        .auth-status.error {
-            background-color: #ffebee;
-            color: #c62828;
-        }
-        
-        .auth-status.success {
-            background-color: #e8f5e9;
-            color: #2e7d32;
-        }
+        .auth-status.error { background-color: #ffebee; color: #c62828; }
+        .auth-status.success { background-color: #e8f5e9; color: #2e7d32; }
     </style>
 </head>
 <body>
+    <!-- Your existing HTML structure -->
     <div class="top-section">
-        <div class="theme-controls">
-            <button id="lightThemeBtn" class="theme-btn active">☀️ Light</button>
-            <button id="darkThemeBtn" class="theme-btn">🌙 Dark</button>
-        </div>
-        <div class="hero rounded-box">
-            <h1>Your Sky Blue Anime Paradise</h1>
-            <p class="hero-subtitle">Stream the latest anime with crystal clear quality</p>
-        </div>
+        <!-- ... -->
     </div>
 
     <nav class="navbar">
-        <div class="logo-container">
-            <a href="/">
-                <img src="/assets/logo2.png" alt="AniMotion Logo" class="logo">
-            </a>
-        </div>
-        <div class="search-bar">
-            <input type="text" id="searchInput" placeholder="Search anime...">
-        </div>
+        <!-- ... -->
         <div class="auth-section">
             <button id="loginBtn" class="discord-btn">
                 <span id="authSpinner" class="auth-loading"></span>
                 <img src="/assets/discord-logo.png" alt="Discord Logo" class="discord-icon">
                 <span id="loginText">Login with Discord</span>
             </button>
-            
             <div id="userProfile" class="user-profile hidden">
                 <img id="userAvatar" class="user-avatar" src="" alt="User Avatar">
                 <span id="username"></span>
@@ -103,16 +74,9 @@
 
     <div class="main-content">
         <div id="authStatusMessage" class="auth-status hidden"></div>
-        
-        <div class="section">
-            <h2>Recently Added</h2>
-            <div class="anime-grid" id="recentAnime">
-                <!-- Anime cards will load here -->
-            </div>
-        </div>
+        <!-- ... -->
     </div>
 
-    <!-- Popup Overlay -->
     <div id="popupOverlay" class="popup-overlay">
         <div class="popup-content">
             <h3>Connecting to Discord</h3>
@@ -123,142 +87,93 @@
     </div>
 
     <footer class="footer">
-        <div class="social-links">
-            <a href="https://youtube.com" target="_blank" class="social-link">
-                <img src="/assets/youtube-icon.png" alt="YouTube">
-            </a>
-            <a href="https://tiktok.com" target="_blank" class="social-link">
-                <img src="/assets/tiktok-icon.png" alt="TikTok">
-            </a>
-            <a href="https://discord.com" target="_blank" class="social-link">
-                <img src="/assets/discord-icon.png" alt="Discord">
-            </a>
-        </div>
-        <p class="copyright">© 2025 AniMotion. All rights reserved.</p>
+        <!-- ... -->
     </footer>
 
     <script>
-        // Global variables
-        let authWindow = null;
-        let authCheckInterval = null;
+        // DOM elements
         const popupOverlay = document.getElementById('popupOverlay');
-        const openPopupAgain = document.getElementById('openPopupAgain');
-        const cancelAuth = document.getElementById('cancelAuth');
-        const authStatusMessage = document.getElementById('authStatusMessage');
         const loginBtn = document.getElementById('loginBtn');
-        const loginText = document.getElementById('loginText');
         const authSpinner = document.getElementById('authSpinner');
+        const loginText = document.getElementById('loginText');
         const userProfile = document.getElementById('userProfile');
         const userAvatar = document.getElementById('userAvatar');
         const username = document.getElementById('username');
         const logoutBtn = document.getElementById('logoutBtn');
+        const authStatusMessage = document.getElementById('authStatusMessage');
+        const openPopupAgain = document.getElementById('openPopupAgain');
+        const cancelAuth = document.getElementById('cancelAuth');
 
-        // Open Discord auth in popup
+        // Auth flow
         function openDiscordAuth() {
-            // Set loading state
             authSpinner.style.display = 'inline-block';
             loginText.textContent = 'Preparing...';
-            
-            // Show popup overlay
             popupOverlay.style.display = 'flex';
             
-            // Calculate popup position (centered)
             const width = 500;
             const height = 700;
             const left = (screen.width - width) / 2;
             const top = (screen.height - height) / 2;
             
-            // Open popup window
-            authWindow = window.open(
+            const authWindow = window.open(
                 '/auth/discord',
                 'DiscordAuth',
                 `width=${width},height=${height},top=${top},left=${left}`
             );
             
-            // Check if popup was blocked
-            if (!authWindow || authWindow.closed || typeof authWindow.closed === 'undefined') {
+            if (!authWindow) {
                 showAuthError('Popup was blocked. Please allow popups for this site.');
                 popupOverlay.style.display = 'none';
                 resetLoginButton();
                 return;
             }
-            
-            // Start checking for auth completion
-            authCheckInterval = setInterval(checkAuthStatus, 500);
-            
-            // Update button state
-            loginText.textContent = 'Waiting for authentication...';
+
+            const checkAuth = setInterval(() => {
+                fetch('/api/user')
+                    .then(res => res.json())
+                    .then(user => {
+                        if (user && user.id) {
+                            clearInterval(checkAuth);
+                            authWindow.close();
+                            handleAuthSuccess(user);
+                        }
+                    })
+                    .catch(() => {
+                        if (authWindow.closed) {
+                            clearInterval(checkAuth);
+                            popupOverlay.style.display = 'none';
+                            resetLoginButton();
+                        }
+                    });
+            }, 1000);
         }
 
-        // Check if auth is completed
-        function checkAuthStatus() {
-            if (!authWindow || authWindow.closed) {
-                clearInterval(authCheckInterval);
-                popupOverlay.style.display = 'none';
-                resetLoginButton();
-                return;
-            }
-            
-            try {
-                // This would normally check the popup's URL or communicate via postMessage
-                // For demo purposes, we'll simulate a successful auth after 3 seconds
-                setTimeout(() => {
-                    if (authWindow) {
-                        authWindow.close();
-                        handleAuthSuccess();
-                    }
-                }, 3000);
-            } catch (e) {
-                // Cross-origin error means we can't access the popup's location
-                // In a real app, you'd use postMessage or check server-side session
-            }
-        }
-
-        // Handle successful auth
-        function handleAuthSuccess() {
-            clearInterval(authCheckInterval);
+        function handleAuthSuccess(user) {
             popupOverlay.style.display = 'none';
-            
-            // In a real app, you would fetch user data from your server here
-            // For demo, we'll use mock data
-            const mockUser = {
-                username: 'AnimeFan123',
-                avatar: 'https://cdn.discordapp.com/embed/avatars/0.png'
-            };
-            
-            // Update UI
-            userAvatar.src = mockUser.avatar;
-            username.textContent = mockUser.username;
+            userAvatar.src = user.avatar 
+                ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
+                : 'https://cdn.discordapp.com/embed/avatars/0.png';
+            username.textContent = user.username;
             userProfile.classList.remove('hidden');
             loginBtn.classList.add('hidden');
-            
-            // Show success message
-            showAuthSuccess('Successfully logged in with Discord!');
-            
-            // Reset login button state (in case it's needed again)
+            showAuthSuccess('Successfully logged in!');
             resetLoginButton();
         }
 
-        // Show error message
+        // Helper functions
         function showAuthError(message) {
             authStatusMessage.textContent = message;
             authStatusMessage.className = 'auth-status error';
             authStatusMessage.style.display = 'block';
         }
 
-        // Show success message
         function showAuthSuccess(message) {
             authStatusMessage.textContent = message;
             authStatusMessage.className = 'auth-status success';
             authStatusMessage.style.display = 'block';
-            
-            // Hide after 5 seconds
-            setTimeout(() => {
-                authStatusMessage.style.display = 'none';
-            }, 5000);
+            setTimeout(() => authStatusMessage.style.display = 'none', 5000);
         }
 
-        // Reset login button to initial state
         function resetLoginButton() {
             authSpinner.style.display = 'none';
             loginText.textContent = 'Login with Discord';
@@ -266,71 +181,43 @@
 
         // Event listeners
         loginBtn.addEventListener('click', openDiscordAuth);
-        
         openPopupAgain.addEventListener('click', (e) => {
             e.preventDefault();
             openDiscordAuth();
         });
-        
         cancelAuth.addEventListener('click', () => {
-            if (authWindow && !authWindow.closed) {
-                authWindow.close();
-            }
-            clearInterval(authCheckInterval);
             popupOverlay.style.display = 'none';
             resetLoginButton();
         });
-        
         logoutBtn.addEventListener('click', () => {
-            // In a real app, you would call your server's logout endpoint
-            fetch('/logout', { method: 'POST' })
-                .then(() => {
-                    userProfile.classList.add('hidden');
-                    loginBtn.classList.remove('hidden');
-                    showAuthSuccess('Successfully logged out.');
-                })
-                .catch(err => {
-                    showAuthError('Logout failed. Please try again.');
-                });
+            fetch('/logout').then(() => {
+                userProfile.classList.add('hidden');
+                loginBtn.classList.remove('hidden');
+                showAuthSuccess('Successfully logged out.');
+            });
         });
 
-        // Check for auth status on page load
+        // Check auth status on load
         document.addEventListener('DOMContentLoaded', () => {
-            // In a real app, you would check if the user is already logged in
-            // by making an API call to your server
+            fetch('/api/user')
+                .then(res => res.json())
+                .then(user => {
+                    if (user && user.id) {
+                        userAvatar.src = user.avatar 
+                            ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
+                            : 'https://cdn.discordapp.com/embed/avatars/0.png';
+                        username.textContent = user.username;
+                        userProfile.classList.remove('hidden');
+                        loginBtn.classList.add('hidden');
+                    }
+                });
+
             const urlParams = new URLSearchParams(window.location.search);
-            
             if (urlParams.has('login_failed')) {
                 showAuthError('Login failed. Please try again.');
+                window.history.replaceState({}, document.title, window.location.pathname);
             }
-            
-            // Clean URL
-            if (window.history.replaceState) {
-                const cleanURL = window.location.pathname;
-                window.history.replaceState({}, document.title, cleanURL);
-            }
-            
-            // Check for existing session (mock)
-            setTimeout(() => {
-                // This would be an API call in a real app
-                const mockLoggedIn = false; // Change to true to simulate logged in state
-                
-                if (mockLoggedIn) {
-                    const mockUser = {
-                        username: 'ExistingUser',
-                        avatar: 'https://cdn.discordapp.com/embed/avatars/1.png'
-                    };
-                    
-                    userAvatar.src = mockUser.avatar;
-                    username.textContent = mockUser.username;
-                    userProfile.classList.remove('hidden');
-                    loginBtn.classList.add('hidden');
-                }
-            }, 500);
         });
     </script>
-    
-    <script src="/js/theme.js"></script>
-    <script src="/js/main.js"></script>
 </body>
 </html>
